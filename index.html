@@ -3,128 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Monthly Bills & Debt Tracker</title>
+  <title>Monthly Bills & Loan Tracker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
   </style>
 </head>
-<body class="p-3 md:p-6 max-w-5xl mx-auto">
+<body class="text-slate-800 antialiased min-h-screen pb-12">
 
-  <!-- Header -->
-  <header class="flex flex-col md:flex-row md:items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6 gap-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-wallet text-indigo-600 mr-2"></i>Bills & Debt Ledger</h1>
-      <p class="text-xs text-gray-500 mt-1">Ligtas ang data sa browser kahit i-update ang script o i-refresh.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition">
-        <i class="fa-solid fa-plus"></i> Mag-add ng Bill / Loan
-      </button>
-      <button onclick="exportData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Mag-Download ng Data Backup">
-        <i class="fa-solid fa-download"></i> Backup
-      </button>
-      <button onclick="document.getElementById('importFile').click()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Mag-Restore ng Data">
-        <i class="fa-solid fa-upload"></i> Restore
-      </button>
-      <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
-    </div>
-  </header>
-
-  <!-- Summary Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <!-- Card 1: Total Monthly Commitment -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Monthly Commitment</p>
-        <h2 class="text-2xl font-black text-gray-800 mt-1" id="sumMonthly">₱0.00</h2>
-        <p class="text-xs text-gray-400 mt-1">Lahat ng buwanang bayarin ngayong buwan</p>
-      </div>
-      <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl">
-        <i class="fa-solid fa-calendar-check"></i>
-      </div>
-    </div>
-
-    <!-- Card 2: Total Remaining Debt (Loans Only) -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Kabuoang Utang (All Loans)</p>
-        <h2 class="text-2xl font-black text-rose-600 mt-1" id="sumTotalDebt">₱0.00</h2>
-        <p class="text-xs text-gray-400 mt-1">Natitirang balance sa lahat ng installment loans</p>
-      </div>
-      <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl">
-        <i class="fa-solid fa-hand-holding-dollar"></i>
-      </div>
-    </div>
-
-    <!-- Card 3: Monthly Progress -->
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
-      <div>
-        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Status Ngayong Buwan</p>
-        <h2 class="text-2xl font-black text-emerald-600 mt-1" id="sumPaid">₱0.00</h2>
-        <p class="text-xs text-gray-500 mt-1" id="sumUnpaid">Natitira: ₱0.00</p>
-      </div>
-      <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
-        <i class="fa-solid fa-chart-pie"></i>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filter & Month Selection -->
-  <div class="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-6 gap-3">
-    <div class="flex items-center gap-2">
-      <label class="text-sm font-bold text-gray-700">Tignan ang Buwan:</label>
-      <input type="month" id="selectedMonth" onchange="renderApp()" class="border border-gray-300 rounded-xl px-3 py-1.5 text-sm font-semibold text-gray-700 focus:outline-none focus:border-indigo-500">
-    </div>
-    <div class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-      <i class="fa-solid fa-shield-halved"></i> Auto-saved sa browser storage
-    </div>
-  </div>
-
-  <!-- Bill List Section -->
-  <main class="space-y-4" id="billContainer">
-    <!-- Dynamically loaded cards -->
-  </main>
-
-  <!-- Add / Edit Modal -->
-  <div id="itemModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-      <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-        <h3 class="font-bold text-gray-800" id="modalTitle">Mag-add ng Bagong Bill / Utang</h3>
-        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <form id="billForm" onsubmit="saveBill(event)" class="p-5 space-y-4">
-        <input type="hidden" id="editId">
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Pangalan ng Bill / Utang</label>
-          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Rent" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+  <!-- Navigation Bar -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-200">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <h1 class="font-black text-slate-900 text-lg leading-tight">BillTracker</h1>
+            <p class="text-xs text-slate-500 font-medium">Monthly Bills & Loan Ledger</p>
+          </div>
         </div>
 
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button onclick="exportData()" class="p-2 sm:px-3 sm:py-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition text-xs font-semibold flex items-center gap-1.5" title="Backup Data">
+            <i class="fa-solid fa-download text-sm"></i>
+            <span class="hidden sm:inline">Backup</span>
+          </button>
+          
+          <button onclick="document.getElementById('importFile').click()" class="p-2 sm:px-3 sm:py-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition text-xs font-semibold flex items-center gap-1.5" title="Restore Data">
+            <i class="fa-solid fa-upload text-sm"></i>
+            <span class="hidden sm:inline">Restore</span>
+          </button>
+          <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+
+          <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md shadow-indigo-200 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Bill / Loan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+    <!-- Top Summary Dashboard (4 Cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Card 1: Monthly Commitment -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 opacity-60"></div>
+        <div class="z-10">
+          <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-md">Buwanang Commitment</span>
+          <h3 class="text-2xl font-black text-slate-900 mt-2" id="sumMonthly">₱0.00</h3>
+          <p class="text-xs text-slate-500 mt-1">Kabuoang babayaran ngayong buwan</p>
+        </div>
+      </div>
+
+      <!-- Card 2: Total Remaining Debt (Loans Only) -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-0 opacity-60"></div>
+        <div class="z-10">
+          <span class="text-[11px] font-bold text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-md">Kabuoang Utang (Loans)</span>
+          <h3 class="text-2xl font-black text-rose-600 mt-2" id="sumTotalDebt">₱0.00</h3>
+          <p class="text-xs text-slate-500 mt-1">Natitirang balance sa lahat ng loan</p>
+        </div>
+      </div>
+
+      <!-- Card 3: Total Paid This Month -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-0 opacity-60"></div>
+        <div class="z-10">
+          <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">Nabayaran Na</span>
+          <h3 class="text-2xl font-black text-emerald-600 mt-2" id="sumPaid">₱0.00</h3>
+          <p class="text-xs text-slate-500 mt-1">Naitalang bayad ngayong buwan</p>
+        </div>
+      </div>
+
+      <!-- Card 4: Remaining This Month -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -z-0 opacity-60"></div>
+        <div class="z-10">
+          <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded-md">Kailangan Pang Bayaran</span>
+          <h3 class="text-2xl font-black text-amber-600 mt-2" id="sumUnpaid">₱0.00</h3>
+          <p class="text-xs text-slate-500 mt-1">Natitirang hulog ngayong buwan</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Filter & Month Switcher Bar -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-3 w-full sm:w-auto">
+        <label for="selectedMonth" class="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Pumili ng Buwan:</label>
+        <input type="month" id="selectedMonth" onchange="renderApp()" class="w-full sm:w-auto bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      
+      <div class="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-end sm:self-auto">
+        <i class="fa-solid fa-lock"></i>
+        <span>Naka-save sa Browser Storage</span>
+      </div>
+    </div>
+
+    <!-- Main List Container -->
+    <main class="space-y-4" id="billContainer"></main>
+
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transition-all transform scale-100">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2" id="modalTitle">
+          <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+          <span>Mag-add ng Bagong Bill / Utang</span>
+        </h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200/50 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="billForm" onsubmit="saveBill(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editId">
+
+        <!-- Name Field -->
         <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Uri ng Bayarin</label>
-          <select id="billType" onchange="toggleTypeFields()" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
-            <option value="utility">Utility / Regular Bill (Walang Tapos - Hal. Kuryente, Rent)</option>
-            <option value="loan">Installment / Loan (May Takdang Buwan)</option>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Pangalan ng Bill / Utang</label>
+          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Bahay Renta" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+        </div>
+
+        <!-- Type Field -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Uri ng Bayarin</label>
+          <select id="billType" onchange="toggleTypeFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <option value="utility">Utility / Regular Bill (Walang Tapos - Hal. Kuryente, Rent, Internet)</option>
+            <option value="loan">Installment / Loan (May Takdang Buwan ng Hulog)</option>
           </select>
         </div>
 
         <!-- Utility Fields -->
-        <div id="utilityFields" class="space-y-3">
+        <div id="utilityFields" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Buwanang Bayad (₱)</label>
-            <input type="text" id="utilityAmount" placeholder="0.00" oninput="formatCurrencyInput(this)" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buwanang Bayad (₱)</label>
+            <input type="text" id="utilityAmount" placeholder="0.00" oninput="formatCurrencyInput(this)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
         </div>
 
         <!-- Loan Fields -->
-        <div id="loanFields" class="hidden space-y-3">
+        <div id="loanFields" class="hidden space-y-4">
           <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Paano mo gustong i-set ang Halaga?</label>
-            <select id="loanCalcType" onchange="toggleLoanCalcMode()" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Paano ikakalkula ang Loan?</label>
+            <select id="loanCalcType" onchange="toggleLoanCalcMode()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
               <option value="total">Ilalagay ang Buong Utang + Bilang ng Buwan (Auto Monthly)</option>
               <option value="monthly">Ilalagay ang Monthly Payment + Bilang ng Buwan (Auto Total)</option>
               <option value="custom">Manual Custom Monthly (Paiba-iba ang bayad bawat buwan)</option>
@@ -132,52 +182,56 @@
           </div>
 
           <div id="totalLoanGroup">
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Buong Utang / Total Loan (₱)</label>
-            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buong Utang / Total Loan (₱)</label>
+            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
 
           <div id="monthlyLoanGroup" class="hidden">
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Buwanang Bayad / Fixed Monthly (₱)</label>
-            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buwanang Bayad / Fixed Monthly (₱)</label>
+            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
 
           <div id="monthsGroup">
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Ilang Buwan Babayaran?</label>
-            <input type="number" id="loanMonths" min="1" max="120" value="12" oninput="autoCalcLoan()" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Ilang Buwan Babayaran?</label>
+            <input type="number" id="loanMonths" min="1" max="120" value="12" oninput="autoCalcLoan()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-gray-700 mb-1 uppercase">Simulang Buwan ng Hulog</label>
-            <input type="month" id="startMonth" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Simulang Buwan ng Hulog</label>
+            <input type="month" id="startMonth" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
           </div>
 
-          <!-- Calculation Preview -->
-          <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-xs text-indigo-900 flex justify-between items-center" id="loanSummaryBox">
-            <span>Kalkulasyon:</span>
+          <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 text-xs text-indigo-950 flex justify-between items-center" id="loanSummaryBox">
+            <span class="font-medium">Kalkulasyon:</span>
             <span class="font-bold" id="loanSummaryText">Pumili ng setup</span>
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-3 border-t border-gray-100">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl font-semibold">Kanselahin</button>
-          <button type="submit" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold">I-save</button>
+        <!-- Buttons -->
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
+            Kanselahin
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 transition">
+            I-save
+          </button>
         </div>
       </form>
+
     </div>
   </div>
 
   <script>
-    // PERMANENT STORAGE KEY (Huwag babaguhin ang pangalan na ito para manatili ang data sa browser)
+    // Storage Key
     const STORAGE_KEY = 'my_bills_app_data';
 
-    // Safe Initialization (Pinipigilan ang pagka-corrupt o pagkabura kapag nag-update ng script)
+    // Safe Initialization
     let billsData = [];
     try {
       const rawData = localStorage.getItem(STORAGE_KEY);
       billsData = rawData ? JSON.parse(rawData) : [];
       if (!Array.isArray(billsData)) billsData = [];
     } catch (err) {
-      console.error("Error loading data from localStorage", err);
       billsData = [];
     }
 
@@ -187,7 +241,7 @@
     document.getElementById('selectedMonth').value = currentMonthStr;
     document.getElementById('startMonth').value = currentMonthStr;
 
-    // Helper Functions for Formatting with Comma
+    // Currency Formatting & Comma Handler
     function parseAmount(val) {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -232,10 +286,10 @@
             document.getElementById('loanMonths').value = item.months || 12;
             document.getElementById('startMonth').value = item.startMonth || currentMonthStr;
           }
-          document.getElementById('modalTitle').innerText = 'I-edit ang Bill / Utang';
+          document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600"></i> <span>I-edit ang Bill / Utang</span>';
         }
       } else {
-        document.getElementById('modalTitle').innerText = 'Mag-add ng Bagong Bill / Utang';
+        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-indigo-600"></i> <span>Mag-add ng Bagong Bill / Utang</span>';
       }
 
       toggleTypeFields();
@@ -300,7 +354,7 @@
       }
     }
 
-    // Save Bill or Loan safely
+    // Save Record
     function saveBill(e) {
       e.preventDefault();
       const id = document.getElementById('editId').value || 'bill_' + Date.now();
@@ -368,51 +422,3 @@
       if (item) {
         if (!item.customMonthly) item.customMonthly = {};
         item.customMonthly[monthKey] = parseAmount(value);
-        saveAndRender();
-      }
-    }
-
-    // Save Data to Permanent LocalStorage
-    function saveAndRender() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(billsData));
-      } catch (e) {
-        console.error("Hindi ma-save ang data:", e);
-      }
-      renderApp();
-    }
-
-    function getMonthOffset(startStr, targetStr) {
-      const [sY, sM] = startStr.split('-').map(Number);
-      const [tY, tM] = targetStr.split('-').map(Number);
-      return (tY - sY) * 12 + (tM - sM);
-    }
-
-    // Core Render Engine
-    function renderApp() {
-      const selectedMonth = document.getElementById('selectedMonth').value || currentMonthStr;
-      const container = document.getElementById('billContainer');
-      container.innerHTML = '';
-
-      let totalMonthlyCommitment = 0;
-      let totalPaidThisMonth = 0;
-      let totalUnpaidThisMonth = 0;
-      let overallTotalLoanDebt = 0;
-
-      // Compute Overall Total Loans Remaining Balance
-      billsData.forEach(item => {
-        if (item.type === 'loan') {
-          let paidSoFar = 0;
-          for (let m in item.paidStatus) {
-            if (item.paidStatus[m]) {
-              const currentVal = (item.customMonthly && item.customMonthly[m] !== undefined)
-                ? item.customMonthly[m]
-                : item.monthly;
-              paidSoFar += currentVal;
-            }
-          }
-          const remaining = Math.max(0, item.totalDebt - paidSoFar);
-          overallTotalLoanDebt += remaining;
-        }
-      });
-
