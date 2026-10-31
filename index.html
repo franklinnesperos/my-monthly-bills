@@ -422,3 +422,208 @@
       if (item) {
         if (!item.customMonthly) item.customMonthly = {};
         item.customMonthly[monthKey] = parseAmount(value);
+        saveAndRender();
+      }
+    }
+
+    function saveAndRender() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(billsData));
+      } catch (e) {
+        console.error("Error saving data:", e);
+      }
+      renderApp();
+    }
+
+    function getMonthOffset(startStr, targetStr) {
+      const [sY, sM] = startStr.split('-').map(Number);
+      const [tY, tM] = targetStr.split('-').map(Number);
+      return (tY - sY) * 12 + (tM - sM);
+    }
+
+    // Main App Renderer
+    function renderApp() {
+      const selectedMonth = document.getElementById('selectedMonth').value || currentMonthStr;
+      const container = document.getElementById('billContainer');
+      container.innerHTML = '';
+
+      let totalMonthlyCommitment = 0;
+      let totalPaidThisMonth = 0;
+      let totalUnpaidThisMonth = 0;
+      let overallTotalLoanDebt = 0;
+
+      // Calculate Total Remaining Debt for All Loans
+      billsData.forEach(item => {
+        if (item.type === 'loan') {
+          let paidSoFar = 0;
+          for (let m in item.paidStatus) {
+            if (item.paidStatus[m]) {
+              const currentVal = (item.customMonthly && item.customMonthly[m] !== undefined)
+                ? item.customMonthly[m]
+                : item.monthly;
+              paidSoFar += currentVal;
+            }
+          }
+          const remaining = Math.max(0, item.totalDebt - paidSoFar);
+          overallTotalLoanDebt += remaining;
+        }
+      });
+
+      // Active Bills for Selected Month
+      const activeItems = billsData.filter(item => {
+        if (item.type === 'utility') return true;
+        const offset = getMonthOffset(item.startMonth, selectedMonth);
+        return offset >= 0 && offset < item.months;
+      });
+
+      if (activeItems.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-sm">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+              <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <h3 class="text-slate-800 font-bold text-base">Walang Naka-record na Bill sa Buwan na Ito</h3>
+            <p class="text-slate-500 text-xs mt-1">I-click ang button sa ibaba para mag-add ng bagong hulog o utility bill.</p>
+            <button onclick="openModal()" class="mt-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-xl text-xs font-bold transition">
+              + Mag-add ng Bill / Utang
+            </button>
+          </div>
+        `;
+      }
+
+      activeItems.forEach(item => {
+        const isPaid = item.paidStatus && item.paidStatus[selectedMonth];
+        
+        let dueAmount = 0;
+        if (item.type === 'utility') {
+          dueAmount = item.amount || 0;
+        } else {
+          dueAmount = (item.customMonthly && item.customMonthly[selectedMonth] !== undefined)
+            ? item.customMonthly[selectedMonth]
+            : item.monthly;
+        }
+
+        totalMonthlyCommitment += dueAmount;
+        if (isPaid) {
+          totalPaidThisMonth += dueAmount;
+        } else {
+          totalUnpaidThisMonth += dueAmount;
+        }
+
+        // Card Element Construction
+        const card = document.createElement('div');
+        card.className = `bg-white p-5 rounded-2xl border ${isPaid ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'} shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:shadow-md`;
+
+        let loanInfoHTML = '';
+        if (item.type === 'loan') {
+          const offset = getMonthOffset(item.startMonth, selectedMonth) + 1;
+          
+          let paidSoFar = 0;
+          for (let m in item.paidStatus) {
+            if (item.paidStatus[m]) {
+              const currentVal = (item.customMonthly && item.customMonthly[m] !== undefined)
+                ? item.customMonthly[m]
+                : item.monthly;
+              paidSoFar += currentVal;
+            }
+          }
+          const remainingDebt = Math.max(0, item.totalDebt - paidSoFar);
+
+          loanInfoHTML = `
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1.5">
+              <span><i class="fa-solid fa-hourglass-half mr-1 text-indigo-500"></i> Buwan: <b>${offset}</b> / ${item.months}</span>
+              <span><i class="fa-solid fa-coins mr-1 text-amber-500"></i> Natitirang Utang: <b>${formatMoney(remainingDebt)}</b></span>
+              <span><i class="fa-solid fa-receipt mr-1 text-slate-400"></i> Kabuoan: ${formatMoney(item.totalDebt)}</span>
+            </div>
+          `;
+        } else {
+          loanInfoHTML = `<div class="text-xs text-indigo-600 font-medium mt-1"><i class="fa-solid fa-rotate mr-1"></i> Recurring Monthly Bill</div>`;
+        }
+
+        card.innerHTML = `
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-800">${item.name}</h3>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md ${item.type === 'loan' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
+                ${item.type === 'loan' ? 'Loan / Installment' : 'Utility'}
+              </span>
+            </div>
+            ${loanInfoHTML}
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
+            <!-- Manual Editable Monthly Input -->
+            <div class="text-right">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-semibold text-slate-400">Bayad:</span>
+                <input type="text" 
+                       value="${dueAmount ? dueAmount.toLocaleString('en-US') : ''}" 
+                       onchange="updateCustomMonthly('${item.id}', '${selectedMonth}', this.value)"
+                       oninput="formatCurrencyInput(this)"
+                       class="w-32 text-right font-black text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                       placeholder="0.00">
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+              <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
+                      class="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
+                ${isPaid ? 'Bayad Na' : 'Hindi Pa'}
+              </button>
+              
+              <button onclick="openModal('${item.id}')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-slate-100 flex items-center justify-center transition" title="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteBill('${item.id}')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 flex items-center justify-center transition" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      // Update Top Dashboards
+      document.getElementById('sumMonthly').innerText = formatMoney(totalMonthlyCommitment);
+      document.getElementById('sumTotalDebt').innerText = formatMoney(overallTotalLoanDebt);
+      document.getElementById('sumPaid').innerText = formatMoney(totalPaidThisMonth);
+      document.getElementById('sumUnpaid').innerText = formatMoney(totalUnpaidThisMonth);
+    }
+
+    // Export & Import Backup
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(billsData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `bills_backup_${new Date().toISOString().substring(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (Array.isArray(imported)) {
+            billsData = imported;
+            saveAndRender();
+            alert('Matagumpay na na-restore ang iyong mga bills data!');
+          }
+        } catch(err) {
+          alert('Invalid JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Run Initial App
+    renderApp();
+  </script>
+</body>
+</html>
