@@ -122,14 +122,14 @@
 
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pangalan ng Bill / Utang</label>
-          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Bahay Renta" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Mari Loan" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Uri ng Bayarin</label>
           <select id="billType" onchange="toggleTypeFields()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
             <option value="utility">Utility / Regular Bill (Walang Tapos - Hal. Kuryente, Rent)</option>
-            <option value="loan">Installment / Loan (May Takdang Buwan)</option>
+            <option value="loan">Installment / Loan (Fixed Monthly)</option>
           </select>
         </div>
 
@@ -151,20 +151,20 @@
           <div>
             <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Paraan ng Kalkulasyon</label>
             <select id="loanCalcType" onchange="toggleLoanCalcMode()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+              <option value="monthly">Monthly Amortization + Bilang ng Buwan (Auto Total)</option>
               <option value="total">Buong Utang + Bilang ng Buwan (Auto Monthly)</option>
-              <option value="monthly">Monthly Payment + Bilang ng Buwan (Auto Total)</option>
               <option value="custom">Manual Custom Monthly (Paiba-iba bawat buwan)</option>
             </select>
           </div>
 
-          <div id="totalLoanGroup">
-            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buong Utang / Total Loan (₱)</label>
-            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+          <div id="monthlyLoanGroup">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Monthly Amortization / Buwanang Bayad (₱)</label>
+            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
-          <div id="monthlyLoanGroup" class="hidden">
-            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buwanang Bayad / Fixed Monthly (₱)</label>
-            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+          <div id="totalLoanGroup" class="hidden">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buong Utang / Total Loan (₱)</label>
+            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
           <div id="monthsGroup">
@@ -282,7 +282,7 @@
           if (item.type === 'utility') {
             document.getElementById('utilityAmount').value = item.amount ? item.amount.toLocaleString('en-US') : '';
           } else {
-            document.getElementById('loanCalcType').value = item.calcType || 'total';
+            document.getElementById('loanCalcType').value = item.calcType || 'monthly';
             document.getElementById('totalLoan').value = item.totalDebt ? item.totalDebt.toLocaleString('en-US') : '';
             document.getElementById('monthlyLoan').value = item.monthly ? item.monthly.toLocaleString('en-US') : '';
             document.getElementById('loanMonths').value = item.months || 12;
@@ -322,17 +322,17 @@
       const monthlyGroup = document.getElementById('monthlyLoanGroup');
       const monthsGroup = document.getElementById('monthsGroup');
 
-      if (mode === 'total') {
+      if (mode === 'monthly') {
+        monthlyGroup.classList.remove('hidden');
+        totalGroup.classList.add('hidden');
+        monthsGroup.classList.remove('hidden');
+      } else if (mode === 'total') {
         totalGroup.classList.remove('hidden');
         monthlyGroup.classList.add('hidden');
-        monthsGroup.classList.remove('hidden');
-      } else if (mode === 'monthly') {
-        totalGroup.classList.add('hidden');
-        monthlyGroup.classList.remove('hidden');
         monthsGroup.classList.remove('hidden');
       } else if (mode === 'custom') {
+        monthlyGroup.classList.remove('hidden');
         totalGroup.classList.remove('hidden');
-        monthlyGroup.classList.add('hidden');
         monthsGroup.classList.remove('hidden');
       }
       autoCalcLoan();
@@ -343,14 +343,14 @@
       const months = parseInt(document.getElementById('loanMonths').value) || 1;
       const summaryText = document.getElementById('loanSummaryText');
 
-      if (mode === 'total') {
-        const total = parseAmount(document.getElementById('totalLoan').value);
-        const monthly = months > 0 ? total / months : 0;
-        summaryText.innerText = `Monthly: ${formatMoney(monthly)} x ${months} buwan`;
-      } else if (mode === 'monthly') {
+      if (mode === 'monthly') {
         const monthly = parseAmount(document.getElementById('monthlyLoan').value);
         const total = monthly * months;
         summaryText.innerText = `Kabuoang Utang: ${formatMoney(total)}`;
+      } else if (mode === 'total') {
+        const total = parseAmount(document.getElementById('totalLoan').value);
+        const monthly = months > 0 ? total / months : 0;
+        summaryText.innerText = `Monthly: ${formatMoney(monthly)} x ${months} buwan`;
       } else if (mode === 'custom') {
         summaryText.innerText = `Manual Custom Input bawat buwan`;
       }
@@ -380,15 +380,15 @@
         billObj.months = months;
         billObj.startMonth = startMonth;
 
-        if (calcType === 'total') {
-          billObj.totalDebt = parseAmount(document.getElementById('totalLoan').value);
-          billObj.monthly = billObj.totalDebt / months;
-        } else if (calcType === 'monthly') {
+        if (calcType === 'monthly') {
           billObj.monthly = parseAmount(document.getElementById('monthlyLoan').value);
           billObj.totalDebt = billObj.monthly * months;
-        } else if (calcType === 'custom') {
+        } else if (calcType === 'total') {
           billObj.totalDebt = parseAmount(document.getElementById('totalLoan').value);
           billObj.monthly = billObj.totalDebt / months;
+        } else if (calcType === 'custom') {
+          billObj.monthly = parseAmount(document.getElementById('monthlyLoan').value);
+          billObj.totalDebt = parseAmount(document.getElementById('totalLoan').value);
         }
       }
 
@@ -449,7 +449,6 @@
       return date.toLocaleDateString('tl-PH', { month: 'long', year: 'numeric' });
     }
 
-    // Timeline Modal Opener
     function openLoanTimeline(id) {
       const item = billsData.find(b => b.id === id);
       if (!item) return;
@@ -461,7 +460,6 @@
       container.innerHTML = '';
 
       const [startYear, startMonthNum] = (item.startMonth || currentMonthStr).split('-').map(Number);
-
       const totalSteps = item.type === 'loan' ? item.months : 12;
 
       for (let i = 0; i < totalSteps; i++) {
@@ -511,7 +509,6 @@
       document.getElementById('detailsModal').classList.remove('flex');
     }
 
-    // Core App Renderer
     function renderApp() {
       const selectedMonth = document.getElementById('selectedMonth').value || currentMonthStr;
       const container = document.getElementById('billContainer');
@@ -597,7 +594,7 @@
           const remainingDebt = Math.max(0, item.totalDebt - paidSoFar);
 
           monthTaglineHTML = `
-            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400">
+            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400 mt-1">
               <span class="text-indigo-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i> Buwan <b>${offset}</b> ng ${item.months}</span>
               <span><i class="fa-solid fa-coins mr-1 text-amber-400"></i> Natitirang Utang: <b>${formatMoney(remainingDebt)}</b></span>
             </div>
@@ -605,7 +602,7 @@
         } else {
           const currentMonthName = getMonthNameTagalog(selectedMonth);
           monthTaglineHTML = `
-            <div class="text-[11px] text-indigo-400 font-medium">
+            <div class="text-[11px] text-indigo-400 font-medium mt-1">
               <i class="fa-solid fa-calendar-check mr-1"></i> Hulog para sa: <b>${currentMonthName}</b>
             </div>
           `;
@@ -637,7 +634,7 @@
 
           <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
             <button onclick="openLoanTimeline('${item.id}')" class="text-xs text-indigo-400 font-bold hover:underline flex items-center gap-1">
-              <i class="fa-solid fa-list-check"></i> Tignan ang Timeline
+              <i class="fa-solid fa-list-check"></i> Timeline View
             </button>
 
             <div class="flex items-center gap-2">
@@ -659,7 +656,6 @@
         container.appendChild(card);
       });
 
-      // Update Due Alert Banner
       const alertBanner = document.getElementById('dueAlertBanner');
       if (dueSoonCount > 0) {
         alertBanner.classList.remove('hidden');
