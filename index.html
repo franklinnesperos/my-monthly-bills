@@ -3,229 +3,196 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monthly Bills & Loan Tracker</title>
+  <title>Tagapamahala ng Bayarin - Monthly Bills & Loan Tracker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
     }
   </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen pb-12">
+<body class="min-h-screen pb-12 antialiased">
 
-  <!-- Navigation Bar -->
-  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16 items-center">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-indigo-200">
-            <i class="fa-solid fa-receipt"></i>
-          </div>
-          <div>
-            <h1 class="font-black text-slate-900 text-lg leading-tight">BillTracker</h1>
-            <p class="text-xs text-slate-500 font-medium">Monthly Bills & Loan Ledger</p>
-          </div>
+  <div class="max-w-md mx-auto p-4 space-y-5">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-lg flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-12 h-12 bg-gradient-to-tr from-violet-600 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-xl shadow-md shadow-indigo-500/30">
+          <i class="fa-solid fa-wallet"></i>
         </div>
+        <div>
+          <h1 class="font-extrabold text-white text-base leading-tight">Tagapamahala ng Bayarin</h1>
+          <p class="text-xs text-slate-400 font-medium">Monthly Bills & Loan Tracker</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="exportData()" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center text-xs transition" title="Backup Data">
+          <i class="fa-solid fa-download"></i>
+        </button>
+        <button onclick="document.getElementById('importFile').click()" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl flex items-center justify-center text-xs transition" title="Restore Data">
+          <i class="fa-solid fa-upload"></i>
+        </button>
+        <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+      </div>
+    </header>
 
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <button onclick="exportData()" class="p-2 sm:px-3 sm:py-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition text-xs font-semibold flex items-center gap-1.5" title="Backup Data">
-            <i class="fa-solid fa-download text-sm"></i>
-            <span class="hidden sm:inline">Backup</span>
-          </button>
-          
-          <button onclick="document.getElementById('importFile').click()" class="p-2 sm:px-3 sm:py-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition text-xs font-semibold flex items-center gap-1.5" title="Restore Data">
-            <i class="fa-solid fa-upload text-sm"></i>
-            <span class="hidden sm:inline">Restore</span>
-          </button>
-          <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+    <!-- Add Button Banner -->
+    <button onclick="openModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-slate-950 font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-sm">
+      <i class="fa-solid fa-plus text-base"></i>
+      <span>Magdagdag ng Bill / Loan</span>
+    </button>
 
-          <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md shadow-indigo-200 transition flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i>
-            <span>Add Bill / Loan</span>
-          </button>
+    <!-- Month Selector -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm space-y-2">
+      <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Pumili ng Buwan</label>
+      <input type="month" id="selectedMonth" onchange="renderApp()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-indigo-500 transition">
+    </div>
+
+    <!-- Monthly Commitment Card -->
+    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 p-5 rounded-3xl shadow-xl shadow-indigo-600/20 text-white relative overflow-hidden">
+      <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+      <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Kabuuan Ngayong Buwan</span>
+      <h2 class="text-3xl font-black mt-1" id="sumMonthly">₱0.00</h2>
+      <p class="text-xs text-indigo-100 mt-1 opacity-90" id="sumPaidSub">₱0.00 naibayad na</p>
+    </div>
+
+    <!-- Status ng Bayad Card -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm space-y-2">
+      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Status ng Bayad</span>
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 flex items-center justify-between">
+          <span class="text-xs text-emerald-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Nabayaran:</span>
+          <span class="font-bold text-white text-sm" id="countPaid">0</span>
+        </div>
+        <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/50 flex items-center justify-between">
+          <span class="text-xs text-amber-400 font-semibold flex items-center gap-1"><i class="fa-solid fa-clock"></i> Di Pa Bayad:</span>
+          <span class="font-bold text-white text-sm" id="countUnpaid">0</span>
         </div>
       </div>
     </div>
-  </nav>
 
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
-
-    <!-- Top Summary Dashboard (4 Cards) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      
-      <!-- Card 1: Monthly Commitment -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-bl-full -z-0 opacity-60"></div>
-        <div class="z-10">
-          <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-md">Buwanang Commitment</span>
-          <h3 class="text-2xl font-black text-slate-900 mt-2" id="sumMonthly">₱0.00</h3>
-          <p class="text-xs text-slate-500 mt-1">Kabuoang babayaran ngayong buwan</p>
-        </div>
-      </div>
-
-      <!-- Card 2: Total Remaining Debt (Loans Only) -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-0 opacity-60"></div>
-        <div class="z-10">
-          <span class="text-[11px] font-bold text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-md">Kabuoang Utang (Loans)</span>
-          <h3 class="text-2xl font-black text-rose-600 mt-2" id="sumTotalDebt">₱0.00</h3>
-          <p class="text-xs text-slate-500 mt-1">Natitirang balance sa lahat ng loan</p>
-        </div>
-      </div>
-
-      <!-- Card 3: Total Paid This Month -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-0 opacity-60"></div>
-        <div class="z-10">
-          <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">Nabayaran Na</span>
-          <h3 class="text-2xl font-black text-emerald-600 mt-2" id="sumPaid">₱0.00</h3>
-          <p class="text-xs text-slate-500 mt-1">Naitalang bayad ngayong buwan</p>
-        </div>
-      </div>
-
-      <!-- Card 4: Remaining This Month -->
-      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-bl-full -z-0 opacity-60"></div>
-        <div class="z-10">
-          <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded-md">Kailangan Pang Bayaran</span>
-          <h3 class="text-2xl font-black text-amber-600 mt-2" id="sumUnpaid">₱0.00</h3>
-          <p class="text-xs text-slate-500 mt-1">Natitirang hulog ngayong buwan</p>
-        </div>
-      </div>
-
+    <!-- Natitirang Utang / Installments Card -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm space-y-1">
+      <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Natitirang Utang / Installments</span>
+      <h3 class="text-xl font-extrabold text-amber-400" id="sumTotalDebt">₱0.00</h3>
+      <p class="text-[11px] text-slate-500">Lahat ng Aktibong Hulugan</p>
     </div>
 
-    <!-- Filter & Month Switcher Bar -->
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center space-x-3 w-full sm:w-auto">
-        <label for="selectedMonth" class="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Pumili ng Buwan:</label>
-        <input type="month" id="selectedMonth" onchange="renderApp()" class="w-full sm:w-auto bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-      </div>
-      
-      <div class="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl flex items-center gap-1.5 self-end sm:self-auto">
-        <i class="fa-solid fa-lock"></i>
-        <span>Naka-save sa Browser Storage</span>
-      </div>
+    <!-- Tabs Filter -->
+    <div class="grid grid-cols-3 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 gap-1 text-xs font-bold text-slate-400 text-center">
+      <button onclick="setFilter('all')" id="tabAll" class="py-2.5 rounded-xl bg-indigo-600 text-white transition shadow-sm">Lahat</button>
+      <button onclick="setFilter('utility')" id="tabUtility" class="py-2.5 rounded-xl hover:text-white transition">Utilities</button>
+      <button onclick="setFilter('loan')" id="tabLoan" class="py-2.5 rounded-xl hover:text-white transition">Loans</button>
     </div>
 
     <!-- Main List Container -->
-    <main class="space-y-4" id="billContainer"></main>
+    <main class="space-y-3.5" id="billContainer"></main>
 
   </div>
 
   <!-- Add / Edit Modal -->
-  <div id="itemModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-100 transition-all transform scale-100">
+  <div id="itemModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
       
-      <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2" id="modalTitle">
-          <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/40">
+        <h3 class="font-bold text-white text-sm flex items-center gap-2" id="modalTitle">
+          <i class="fa-solid fa-plus-circle text-indigo-400"></i>
           <span>Mag-add ng Bagong Bill / Utang</span>
         </h3>
-        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200/50 transition">
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-800 transition">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- Modal Form -->
-      <form id="billForm" onsubmit="saveBill(event)" class="p-6 space-y-4">
+      <form id="billForm" onsubmit="saveBill(event)" class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         <input type="hidden" id="editId">
 
-        <!-- Name Field -->
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Pangalan ng Bill / Utang</label>
-          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Bahay Renta" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+          <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pangalan ng Bill / Utang</label>
+          <input type="text" id="billName" required placeholder="Hal. Meralco, Motor Loan, Bahay Renta" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
         </div>
 
-        <!-- Type Field -->
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Uri ng Bayarin</label>
-          <select id="billType" onchange="toggleTypeFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-            <option value="utility">Utility / Regular Bill (Walang Tapos - Hal. Kuryente, Rent, Internet)</option>
-            <option value="loan">Installment / Loan (May Takdang Buwan ng Hulog)</option>
+          <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Uri ng Bayarin</label>
+          <select id="billType" onchange="toggleTypeFields()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+            <option value="utility">Utility / Regular Bill (Walang Tapos - Hal. Kuryente, Rent)</option>
+            <option value="loan">Installment / Loan (May Takdang Buwan)</option>
           </select>
         </div>
 
+        <div>
+          <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Araw ng Due Date (Petsa)</label>
+          <input type="number" id="dueDate" min="1" max="31" value="25" placeholder="Hal. 25" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+        </div>
+
         <!-- Utility Fields -->
-        <div id="utilityFields" class="space-y-4">
+        <div id="utilityFields" class="space-y-3">
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buwanang Bayad (₱)</label>
-            <input type="text" id="utilityAmount" placeholder="0.00" oninput="formatCurrencyInput(this)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buwanang Bayad (₱)</label>
+            <input type="text" id="utilityAmount" placeholder="0.00" oninput="formatCurrencyInput(this)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
         </div>
 
         <!-- Loan Fields -->
-        <div id="loanFields" class="hidden space-y-4">
+        <div id="loanFields" class="hidden space-y-3">
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Paano ikakalkula ang Loan?</label>
-            <select id="loanCalcType" onchange="toggleLoanCalcMode()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-              <option value="total">Ilalagay ang Buong Utang + Bilang ng Buwan (Auto Monthly)</option>
-              <option value="monthly">Ilalagay ang Monthly Payment + Bilang ng Buwan (Auto Total)</option>
-              <option value="custom">Manual Custom Monthly (Paiba-iba ang bayad bawat buwan)</option>
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Paraan ng Kalkulasyon</label>
+            <select id="loanCalcType" onchange="toggleLoanCalcMode()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+              <option value="total">Buong Utang + Bilang ng Buwan (Auto Monthly)</option>
+              <option value="monthly">Monthly Payment + Bilang ng Buwan (Auto Total)</option>
+              <option value="custom">Manual Custom Monthly (Paiba-iba bawat buwan)</option>
             </select>
           </div>
 
           <div id="totalLoanGroup">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buong Utang / Total Loan (₱)</label>
-            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buong Utang / Total Loan (₱)</label>
+            <input type="text" id="totalLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
           <div id="monthlyLoanGroup" class="hidden">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Buwanang Bayad / Fixed Monthly (₱)</label>
-            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Buwanang Bayad / Fixed Monthly (₱)</label>
+            <input type="text" id="monthlyLoan" placeholder="0.00" oninput="formatCurrencyInput(this); autoCalcLoan();" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
           <div id="monthsGroup">
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Ilang Buwan Babayaran?</label>
-            <input type="number" id="loanMonths" min="1" max="120" value="12" oninput="autoCalcLoan()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ilang Buwan Babayaran?</label>
+            <input type="number" id="loanMonths" min="1" max="120" value="12" oninput="autoCalcLoan()" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Simulang Buwan ng Hulog</label>
-            <input type="month" id="startMonth" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Simulang Buwan ng Hulog</label>
+            <input type="month" id="startMonth" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
           </div>
 
-          <div class="bg-indigo-50/70 p-3 rounded-2xl border border-indigo-100 text-xs text-indigo-950 flex justify-between items-center" id="loanSummaryBox">
-            <span class="font-medium">Kalkulasyon:</span>
-            <span class="font-bold" id="loanSummaryText">Pumili ng setup</span>
+          <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs text-slate-300 flex justify-between items-center" id="loanSummaryBox">
+            <span>Kalkulasyon:</span>
+            <span class="font-bold text-indigo-400" id="loanSummaryText">Pumili ng setup</span>
           </div>
         </div>
 
-        <!-- Buttons -->
-        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
-          <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800 transition">
             Kanselahin
           </button>
-          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200 transition">
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition">
             I-save
           </button>
         </div>
       </form>
-
     </div>
   </div>
 
   <script>
-    // Storage Key
-    const STORAGE_KEY = 'my_bills_app_data';
+    const STORAGE_KEY = 'tagapamahala_bayarin_data';
+    let currentFilter = 'all';
 
-    // Safe Initialization
     let billsData = [];
     try {
       const rawData = localStorage.getItem(STORAGE_KEY);
@@ -235,13 +202,11 @@
       billsData = [];
     }
 
-    // Set Default Month Selector
     const today = new Date();
     const currentMonthStr = today.toISOString().substring(0, 7);
     document.getElementById('selectedMonth').value = currentMonthStr;
     document.getElementById('startMonth').value = currentMonthStr;
 
-    // Currency Formatting & Comma Handler
     function parseAmount(val) {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -257,18 +222,30 @@
       let rawValue = input.value.replace(/[^0-9.]/g, '');
       const parts = rawValue.split('.');
       if (parts.length > 2) rawValue = parts[0] + '.' + parts.slice(1).join('');
-
       if (parts[0]) {
         parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
       }
       input.value = parts.join('.');
     }
 
-    // Modal Control Functions
+    function setFilter(filter) {
+      currentFilter = filter;
+      ['all', 'utility', 'loan'].forEach(f => {
+        const btn = document.getElementById('tab' + f.charAt(0).toUpperCase() + f.slice(1));
+        if (f === filter) {
+          btn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white transition shadow-sm';
+        } else {
+          btn.className = 'py-2.5 rounded-xl hover:text-white transition text-slate-400';
+        }
+      });
+      renderApp();
+    }
+
     function openModal(editId = null) {
       document.getElementById('billForm').reset();
       document.getElementById('editId').value = '';
       document.getElementById('startMonth').value = document.getElementById('selectedMonth').value || currentMonthStr;
+      document.getElementById('dueDate').value = 25;
       
       if (editId) {
         const item = billsData.find(b => b.id === editId);
@@ -276,6 +253,7 @@
           document.getElementById('editId').value = item.id;
           document.getElementById('billName').value = item.name;
           document.getElementById('billType').value = item.type;
+          document.getElementById('dueDate').value = item.dueDate || 25;
           
           if (item.type === 'utility') {
             document.getElementById('utilityAmount').value = item.amount ? item.amount.toLocaleString('en-US') : '';
@@ -286,10 +264,10 @@
             document.getElementById('loanMonths').value = item.months || 12;
             document.getElementById('startMonth').value = item.startMonth || currentMonthStr;
           }
-          document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600"></i> <span>I-edit ang Bill / Utang</span>';
+          document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-400"></i> <span>I-edit ang Bill / Utang</span>';
         }
       } else {
-        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-indigo-600"></i> <span>Mag-add ng Bagong Bill / Utang</span>';
+        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-indigo-400"></i> <span>Mag-add ng Bagong Bill / Utang</span>';
       }
 
       toggleTypeFields();
@@ -350,18 +328,18 @@
         const total = monthly * months;
         summaryText.innerText = `Kabuoang Utang: ${formatMoney(total)}`;
       } else if (mode === 'custom') {
-        summaryText.innerText = `Manual Custom Input sa listahan bawat buwan`;
+        summaryText.innerText = `Manual Custom Input bawat buwan`;
       }
     }
 
-    // Save Record
     function saveBill(e) {
       e.preventDefault();
       const id = document.getElementById('editId').value || 'bill_' + Date.now();
       const name = document.getElementById('billName').value;
       const type = document.getElementById('billType').value;
+      const dueDate = parseInt(document.getElementById('dueDate').value) || 25;
 
-      let billObj = { id, name, type, paidStatus: {} };
+      let billObj = { id, name, type, dueDate, paidStatus: {} };
 
       const existing = billsData.find(b => b.id === id);
       if (existing) billObj.paidStatus = existing.paidStatus || {};
@@ -441,7 +419,6 @@
       return (tY - sY) * 12 + (tM - sM);
     }
 
-    // Main App Renderer
     function renderApp() {
       const selectedMonth = document.getElementById('selectedMonth').value || currentMonthStr;
       const container = document.getElementById('billContainer');
@@ -449,10 +426,11 @@
 
       let totalMonthlyCommitment = 0;
       let totalPaidThisMonth = 0;
-      let totalUnpaidThisMonth = 0;
+      let countPaid = 0;
+      let countUnpaid = 0;
       let overallTotalLoanDebt = 0;
 
-      // Calculate Total Remaining Debt for All Loans
+      // Calculate total remaining debt across all loans
       billsData.forEach(item => {
         if (item.type === 'loan') {
           let paidSoFar = 0;
@@ -469,8 +447,9 @@
         }
       });
 
-      // Active Bills for Selected Month
+      // Filter active items for the selected month and tab filter
       const activeItems = billsData.filter(item => {
+        if (currentFilter !== 'all' && item.type !== currentFilter) return false;
         if (item.type === 'utility') return true;
         const offset = getMonthOffset(item.startMonth, selectedMonth);
         return offset >= 0 && offset < item.months;
@@ -478,15 +457,10 @@
 
       if (activeItems.length === 0) {
         container.innerHTML = `
-          <div class="bg-white p-12 rounded-2xl text-center border border-slate-200 shadow-sm">
-            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-              <i class="fa-solid fa-folder-open"></i>
-            </div>
-            <h3 class="text-slate-800 font-bold text-base">Walang Naka-record na Bill sa Buwan na Ito</h3>
-            <p class="text-slate-500 text-xs mt-1">I-click ang button sa ibaba para mag-add ng bagong hulog o utility bill.</p>
-            <button onclick="openModal()" class="mt-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-xl text-xs font-bold transition">
-              + Mag-add ng Bill / Utang
-            </button>
+          <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center">
+            <i class="fa-solid fa-folder-open text-slate-700 text-3xl mb-3"></i>
+            <p class="text-slate-400 text-xs font-medium">Walang naka-record na bill o utang sa buwan na ito.</p>
+            <button onclick="openModal()" class="mt-3 text-xs text-indigo-400 font-bold hover:underline">+ Magdagdag ng Bill</button>
           </div>
         `;
       }
@@ -506,13 +480,13 @@
         totalMonthlyCommitment += dueAmount;
         if (isPaid) {
           totalPaidThisMonth += dueAmount;
+          countPaid++;
         } else {
-          totalUnpaidThisMonth += dueAmount;
+          countUnpaid++;
         }
 
-        // Card Element Construction
         const card = document.createElement('div');
-        card.className = `bg-white p-5 rounded-2xl border ${isPaid ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-200'} shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition hover:shadow-md`;
+        card.className = `bg-slate-900 border ${isPaid ? 'border-emerald-500/40 bg-emerald-500/[0.03]' : 'border-slate-800'} p-4 rounded-2xl shadow-sm space-y-3`;
 
         let loanInfoHTML = '';
         if (item.type === 'loan') {
@@ -530,53 +504,50 @@
           const remainingDebt = Math.max(0, item.totalDebt - paidSoFar);
 
           loanInfoHTML = `
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 mt-1.5">
-              <span><i class="fa-solid fa-hourglass-half mr-1 text-indigo-500"></i> Buwan: <b>${offset}</b> / ${item.months}</span>
-              <span><i class="fa-solid fa-coins mr-1 text-amber-500"></i> Natitirang Utang: <b>${formatMoney(remainingDebt)}</b></span>
-              <span><i class="fa-solid fa-receipt mr-1 text-slate-400"></i> Kabuoan: ${formatMoney(item.totalDebt)}</span>
+            <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400">
+              <span><i class="fa-solid fa-hourglass-half mr-1 text-indigo-400"></i> Buwan <b>${offset}</b> / ${item.months}</span>
+              <span><i class="fa-solid fa-coins mr-1 text-amber-400"></i> Balita: <b>${formatMoney(remainingDebt)}</b></span>
             </div>
           `;
         } else {
-          loanInfoHTML = `<div class="text-xs text-indigo-600 font-medium mt-1"><i class="fa-solid fa-rotate mr-1"></i> Recurring Monthly Bill</div>`;
+          loanInfoHTML = `<div class="text-[11px] text-indigo-400 font-medium"><i class="fa-solid fa-rotate mr-1"></i> Recurring Utility Bill</div>`;
         }
 
         card.innerHTML = `
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <h3 class="text-base font-bold text-slate-800">${item.name}</h3>
-              <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md ${item.type === 'loan' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
-                ${item.type === 'loan' ? 'Loan / Installment' : 'Utility'}
-              </span>
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-white">${item.name}</h3>
+                <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded ${item.type === 'loan' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}">
+                  ${item.type === 'loan' ? 'Loan' : 'Utility'}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i> Due Date: Araw ng <b>${item.dueDate || 25}</b></p>
+              ${loanInfoHTML}
             </div>
-            ${loanInfoHTML}
+
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 block mb-0.5">Bayad Amount</span>
+              <input type="text" 
+                     value="${dueAmount ? dueAmount.toLocaleString('en-US') : ''}" 
+                     onchange="updateCustomMonthly('${item.id}', '${selectedMonth}', this.value)"
+                     oninput="formatCurrencyInput(this)"
+                     class="w-28 text-right font-black text-white bg-slate-800 border border-slate-700 rounded-xl px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500" 
+                     placeholder="0.00">
+            </div>
           </div>
 
-          <div class="flex flex-wrap items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100">
-            <!-- Manual Editable Monthly Input -->
-            <div class="text-right">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-semibold text-slate-400">Bayad:</span>
-                <input type="text" 
-                       value="${dueAmount ? dueAmount.toLocaleString('en-US') : ''}" 
-                       onchange="updateCustomMonthly('${item.id}', '${selectedMonth}', this.value)"
-                       oninput="formatCurrencyInput(this)"
-                       class="w-32 text-right font-black text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-                       placeholder="0.00">
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2">
-              <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
-                      class="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
-                <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
-                ${isPaid ? 'Bayad Na' : 'Hindi Pa'}
-              </button>
-              
-              <button onclick="openModal('${item.id}')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-slate-100 flex items-center justify-center transition" title="Edit">
+          <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+            <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}" style="margin-left: auto;">
+              <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
+              ${isPaid ? 'Nabayaran Na' : 'Markahan bilang Nabayaran'}
+            </button>
+            <div class="flex items-center gap-1 pl-2">
+              <button onclick="openModal('${item.id}')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-xs transition" title="Edit">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button onclick="deleteBill('${item.id}')" class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-slate-100 flex items-center justify-center transition" title="Delete">
+              <button onclick="deleteBill('${item.id}')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 flex items-center justify-center text-xs transition" title="Delete">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -585,14 +556,14 @@
         container.appendChild(card);
       });
 
-      // Update Top Dashboards
+      // Update Summary Cards
       document.getElementById('sumMonthly').innerText = formatMoney(totalMonthlyCommitment);
+      document.getElementById('sumPaidSub').innerText = `${formatMoney(totalPaidThisMonth)} naibayad na`;
       document.getElementById('sumTotalDebt').innerText = formatMoney(overallTotalLoanDebt);
-      document.getElementById('sumPaid').innerText = formatMoney(totalPaidThisMonth);
-      document.getElementById('sumUnpaid').innerText = formatMoney(totalUnpaidThisMonth);
+      document.getElementById('countPaid').innerText = countPaid;
+      document.getElementById('countUnpaid').innerText = countUnpaid;
     }
 
-    // Export & Import Backup
     function exportData() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(billsData, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -622,7 +593,6 @@
       reader.readAsText(file);
     }
 
-    // Run Initial App
     renderApp();
   </script>
 </body>
