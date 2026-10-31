@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tagapamahala ng Bayarin (Bills & Loan Tracker)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Hide scrollbar for clean UI in modal/tables */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col pb-12">
+
+  <!-- Header Section -->
+  <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-md">
+          <i class="fa-solid fa-wallet text-2xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Tagapamahala ng Bayarin</h1>
+          <p class="text-xs text-indigo-100">Monthly Bills & Loan Calculator</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button id="addBillBtn" class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-medium px-4 py-2.5 rounded-xl shadow flex items-center gap-2 transition duration-200 text-sm">
+          <i class="fa-solid fa-plus text-base"></i>
+          <span>Magdagdag ng Bill</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-grow space-y-6">
+
+    <!-- Month Filter & Summary Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Month Selector Box -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <label for="monthSelector" class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">Pumili ng Buwan</label>
+        <div class="relative">
+          <input type="month" id="monthSelector" class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+        </div>
+      </div>
+
+      <!-- Total Monthly Expense Card -->
+      <div class="bg-gradient-to-br from-indigo-500 to-indigo-700 text-white p-5 rounded-2xl shadow-md flex flex-col justify-between">
+        <span class="text-xs font-semibold text-indigo-100 uppercase tracking-wider">Kabuuan ngayong Buwan</span>
+        <div class="mt-2">
+          <h2 id="totalMonthlyAmount" class="text-3xl font-extrabold">₱0.00</h2>
+          <p class="text-xs text-indigo-200 mt-1" id="paidVsTotalText">₱0 / ₱0 Naibayad na</p>
+        </div>
+      </div>
+
+      <!-- Paid Status Summary -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status ng Bayad</span>
+        <div class="mt-2 space-y-1">
+          <div class="flex justify-between text-sm">
+            <span class="text-emerald-600 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> Nabayaran:</span>
+            <span id="paidCount" class="font-bold text-slate-700">0</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-amber-600 font-medium"><i class="fa-solid fa-clock mr-1"></i> Di pa Bayad:</span>
+            <span id="pendingCount" class="font-bold text-slate-700">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Remaining Loans Balance -->
+      <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Natitirang Utang/Installment</span>
+        <div class="mt-2">
+          <h3 id="totalRemainingDebt" class="text-2xl font-bold text-slate-800">₱0.00</h3>
+          <p class="text-xs text-slate-400 mt-1">Lahat ng aktibong Hulugan</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter Tabs & Actions -->
+    <section class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+      <div class="flex bg-slate-200/80 p-1 rounded-xl gap-1 text-sm font-medium">
+        <button id="filterAll" onclick="setFilter('all')" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg transition bg-white shadow-sm text-indigo-600">Lahat</button>
+        <button id="filterUtility" onclick="setFilter('utility')" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Utilities / Regular</button>
+        <button id="filterLoan" onclick="setFilter('loan')" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Loans / Installments</button>
+      </div>
+
+      <!-- Quick Search -->
+      <div class="relative flex-grow sm:max-w-xs">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" id="searchInput" oninput="renderBills()" placeholder="Hapin ang bill..." class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+    </section>
+
+    <!-- Bills List Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center">
+        <h3 class="font-bold text-slate-800 text-base sm:text-lg flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-500"></i>
+          <span>Mga Bayarin para sa <span id="currentSelectedMonthText" class="text-indigo-600">--</span></span>
+        </h3>
+        <span id="billCountBadge" class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full">0 items</span>
+      </div>
+
+      <!-- Container for Bills List -->
+      <div id="billsList" class="divide-y divide-slate-100 min-h-[200px]">
+        <!-- Dynamic content via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Form for Add/Edit Bill -->
+  <div id="billModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-150">
+      
+      <!-- Modal Header -->
+      <div class="bg-indigo-600 px-6 py-4 text-white flex justify-between items-center">
+        <h3 id="modalTitle" class="font-bold text-lg">Magdagdag ng Bagong Bayarin</h3>
+        <button id="closeModalBtn" class="text-white/80 hover:text-white text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- Modal Body (Form) -->
+      <form id="billForm" class="p-6 overflow-y-auto space-y-4 text-sm">
+        <input type="hidden" id="billId">
+
+        <!-- Bill Name -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Pangalan ng Bill / Utang <span class="text-red-500">*</span></label>
+          <input type="text" id="billName" required placeholder="Hal. Meralco, Rent sa Bahay, Home Credit iPhone" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <!-- Bill Category / Type -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Uri ng Bayarin</label>
+          <select id="billType" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <option value="utility">Utility / Regular (Kuryente, Tubig, Rent, Wifi - Walang Matatapos)</option>
+            <option value="loan">Loan / Installment (Motor, Gadget, Utang - May Takdang Buwan)</option>
+          </select>
+        </div>
+
+        <!-- Dynamic Fields for Utility vs Loan -->
+        <div id="loanFields" class="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 space-y-3 hidden">
+          <p class="text-xs font-semibold text-indigo-800 uppercase tracking-wider">Kalkulasyon ng Hulugan</p>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Kabuuan ng Utang (Total)</label>
+              <input type="number" step="0.01" id="totalDebtInput" placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Ilang Buwan Babayaran?</label>
+              <input type="number" id="totalMonthsInput" min="1" placeholder="Hal. 12" class="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 italic">* Pwedeng ilagay ang Buong Utang at Ilang Buwan (kusa lalabas ang monthly) O ilagay ang Monthly at Ilang Buwan (kusa lalabas ang Buong Utang).</p>
+        </div>
+
+        <!-- Monthly Amount & Due Date -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Monthly Payment (₱) <span class="text-red-500">*</span></label>
+            <input type="number" step="0.01" id="monthlyAmount" required placeholder="0.00" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Araw ng Due Date (1-31) <span class="text-red-500">*</span></label>
+            <input type="number" id="dueDate" min="1" max="31" required placeholder="Hal. 15" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Start Month & Year -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Simula ng Paniningil (Buwan & Taon) <span class="text-red-500">*</span></label>
+          <input type="month" id="startMonthYear" required class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Paalala / Notes (Optional)</label>
+          <input type="text" id="billNotes" placeholder="Hal. Account # 123456789" class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <!-- Form Buttons -->
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" id="cancelModalBtn" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 transition font-medium">Kanselahin</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow transition">I-save ang Bill</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Logics -->
+  <script>
+    // State Management
+    let bills = JSON.parse(localStorage.getItem('my_monthly_bills') || '[]');
+    let currentFilter = 'all';
+    
+    // Set default selected month to current month (YYYY-MM)
+    const today = new Date();
+    const currentYYYYMM = today.toISOString().slice(0, 7);
+
+    // DOM Elements
+    const monthSelector = document.getElementById('monthSelector');
+    const billsList = document.getElementById('billsList');
+    const billModal = document.getElementById('billModal');
+    const billForm = document.getElementById('billForm');
+    const billTypeSelect = document.getElementById('billType');
+    const loanFields = document.getElementById('loanFields');
+    const totalDebtInput = document.getElementById('totalDebtInput');
+    const totalMonthsInput = document.getElementById('totalMonthsInput');
+    const monthlyAmountInput = document.getElementById('monthlyAmount');
+    const searchInput = document.getElementById('searchInput');
+
+    // Initialize Page
+    window.addEventListener('DOMContentLoaded', () => {
+      monthSelector.value = currentYYYYMM;
+      document.getElementById('startMonthYear').value = currentYYYYMM;
+      renderBills();
+      setupAutoCalculations();
+    });
+
+    // Save to LocalStorage
+    function saveBills() {
+      localStorage.setItem('my_monthly_bills', JSON.stringify(bills));
+      renderBills();
+    }
+
+    // Toggle Modal
+    document.getElementById('addBillBtn').addEventListener('click', () => openModal());
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+    function openModal(editId = null) {
+      billForm.reset();
+      document.getElementById('billId').value = '';
+      document.getElementById('startMonthYear').value = monthSelector.value || currentYYYYMM;
+
+      if (editId) {
+        const item = bills.find(b => b.id === editId);
+        if (item) {
+          document.getElementById('modalTitle').innerText = 'I-edit ang Bayarin';
+          document.getElementById('billId').value = item.id;
+          document.getElementById('billName').value = item.name;
+          document.getElementById('billType').value = item.type;
+          document.getElementById('monthlyAmount').value = item.monthlyAmount;
+          document.getElementById('dueDate').value = item.dueDate;
+          document.getElementById('startMonthYear').value = item.startMonthYear;
+          document.getElementById('billNotes').value = item.notes || '';
+
+          if (item.type === 'loan') {
+            totalDebtInput.value = item.totalDebt || '';
+            totalMonthsInput.value = item.totalMonths || '';
+          }
+        }
+      } else {
+        document.getElementById('modalTitle').innerText = 'Magdagdag ng Bagong Bayarin';
+      }
+
+      toggleTypeFields();
+      billModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      billModal.classList.add('hidden');
+    }
+
+    // Toggle Installment Fields on Change
+    billTypeSelect.addEventListener('change', toggleTypeFields);
+
+    function toggleTypeFields() {
+      if (billTypeSelect.value === 'loan') {
+        loanFields.classList.remove('hidden');
+      } else {
+        loanFields.classList.add('hidden');
+      }
+    }
+
+    // Auto Computation for Total Debt & Monthly Payment
+    function setupAutoCalculations() {
+      // If Total Debt & Months are entered -> Compute Monthly Amount
+      totalDebtInput.addEventListener('input', () => {
+        const debt = parseFloat(totalDebtInput.value);
+        const months = parseInt(totalMonthsInput.value);
+        if (debt > 0 && months > 0) {
+          monthlyAmountInput.value = (debt / months).toFixed(2);
+        }
+      });
+
+      totalMonthsInput.addEventListener('input', () => {
+        const debt = parseFloat(totalDebtInput.value);
+        const months = parseInt(totalMonthsInput.value);
+        const monthly = parseFloat(monthlyAmountInput.value);
+
+        if (debt > 0 && months > 0) {
+          monthlyAmountInput.value = (debt / months).toFixed(2);
+        } else if (monthly > 0 && months > 0 && !debt) {
+          totalDebtInput.value = (monthly * months).toFixed(2);
+        }
+      });
+
+      // If Monthly Amount is typed and months exist -> Compute Total Debt
+      monthlyAmountInput.addEventListener('input', () => {
+        const monthly = parseFloat(monthlyAmountInput.value);
+        const months = parseInt(totalMonthsInput.value);
+        if (monthly > 0 && months > 0 && billTypeSelect.value === 'loan') {
+          totalDebtInput.value = (monthly * months).toFixed(2);
+        }
+      });
+    }
+
+    // Form Submit Handler (Add / Edit)
+    billForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById('billId').value || 'bill_' + Date.now();
+      const name = document.getElementById('billName').value.trim();
+      const type = document.getElementById('billType').value;
+      const monthlyAmount = parseFloat(document.getElementById('monthlyAmount').value) || 0;
+      const dueDate = parseInt(document.getElementById('dueDate').value) || 1;
+      const startMonthYear = document.getElementById('startMonthYear').value;
+      const notes = document.getElementById('billNotes').value.trim();
+
+      let totalDebt = null;
+      let totalMonths = null;
+
+      if (type === 'loan') {
+        totalDebt = parseFloat(totalDebtInput.value) || (monthlyAmount * (parseInt(totalMonthsInput.value) || 1));
+        totalMonths = parseInt(totalMonthsInput.value) || 1;
+      }
+
+      const existingIndex = bills.findIndex(b => b.id === id);
+
+      const billData = {
+        id,
+        name,
+        type,
+        monthlyAmount,
+        dueDate,
+        startMonthYear,
+        notes,
+        totalDebt,
+        totalMonths,
+        paidMonths: existingIndex > -1 ? (bills[existingIndex].paidMonths || {}) : {}
+      };
+
+      if (existingIndex > -1) {
+        bills[existingIndex] = billData;
+      } else {
+        bills.push(billData);
+      }
+
+      saveBills();
+      closeModal();
+    });
+
+    // Delete Bill
+    function deleteBill(id) {
+      if (confirm('Sigurado ka bang gusto mong burahin ang bill na ito?')) {
+        bills = bills.filter(b => b.id !== id);
+        saveBills();
+      }
+    }
+
+    // Toggle Paid Status for a specific Month
+    function togglePaidStatus(billId, targetMonth) {
+      const bill = bills.find(b => b.id === billId);
+      if (bill) {
+        if (!bill.paidMonths) bill.paidMonths = {};
+        bill.paidMonths[targetMonth] = !bill.paidMonths[targetMonth];
+        saveBills();
+      }
+    }
+
+    // Month & Filter Changes
+    monthSelector.addEventListener('change', renderBills);
+
+    function setFilter(type) {
+      currentFilter = type;
+      ['All', 'Utility', 'Loan'].forEach(f => {
+        const btn = document.getElementById(`filter${f}`);
+        if (f.toLowerCase() === type) {
+          btn.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg transition bg-white shadow-sm text-indigo-600 font-semibold";
+        } else {
+          btn.className = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900";
+        }
+      });
+      renderBills();
+    }
+
+    // Helper: Calculate month difference
+    function getMonthDifference(startYYYYMM, targetYYYYMM) {
+      const [sYear, sMonth] = startYYYYMM.split('-').map(Number);
+      const [tYear, tMonth] = targetYYYYMM.split('-').map(Number);
+      return (tYear - sYear) * 12 + (tMonth - sMonth);
+    }
+
+    // Render Bills List & Summary
+    function renderBills() {
+      const selectedMonth = monthSelector.value || currentYYYYMM;
+      
+      // Format month label (e.g., "October 2026")
+      const [year, month] = selectedMonth.split('-');
+      const monthObj = new Date(year, month - 1);
+      const formattedMonthName = monthObj.toLocaleString('tl-PH', { month: 'long', year: 'numeric' });
+      document.getElementById('currentSelectedMonthText').innerText = formattedMonthName;
+
+      // Filter active bills for the selected month
+      let activeBills = bills.filter(bill => {
+        const diff = getMonthDifference(bill.startMonthYear, selectedMonth);
+        
+        // Cannot appear before starting month
+        if (diff < 0) return false;
+
+        // If utility: continuous indefinitely
+        if (bill.type === 'utility') return true;
+
+        // If loan: active only within duration months
+        if (bill.type === 'loan') {
+          return diff < bill.totalMonths;
+        }
+
+        return true;
+      });
+
+      // Search term filter
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      if (searchTerm) {
+        activeBills = activeBills.filter(b => b.name.toLowerCase().includes(searchTerm));
+      }
+
+      // Filter category
+      if (currentFilter === 'utility') {
+        activeBills = activeBills.filter(b => b.type === 'utility');
+      } else if (currentFilter === 'loan') {
+        activeBills = activeBills.filter(b => b.type === 'loan');
+      }
+
+      // Sort by Due Date
+      activeBills.sort((a, b) => a.dueDate - b.dueDate);
+
+      // Render Dashboard Summaries
+      let totalMonthlySum = 0;
+      let totalPaidSum = 0;
+      let paidCount = 0;
+      let pendingCount = 0;
+
+      activeBills.forEach(b => {
+        totalMonthlySum += b.monthlyAmount;
+        const isPaid = b.paidMonths && b.paidMonths[selectedMonth];
+        if (isPaid) {
+          totalPaidSum += b.monthlyAmount;
+          paidCount++;
+        } else {
+          pendingCount++;
+        }
+      });
+
+      document.getElementById('totalMonthlyAmount').innerText = `₱${totalMonthlySum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('paidVsTotalText').innerText = `₱${totalPaidSum.toLocaleString('en-US', { minimumFractionDigits: 2 })} naibayad na`;
+      document.getElementById('paidCount').innerText = paidCount;
+      document.getElementById('pendingCount').innerText = pendingCount;
+      document.getElementById('billCountBadge').innerText = `${activeBills.length} bayarin`;
+
+      // Calculate Total Outstanding Debt for ALL Loans
+      let remainingDebtTotal = 0;
+      bills.filter(b => b.type === 'loan').forEach(b => {
+        // count how many months paid so far
+        const monthsPaidCount = Object.values(b.paidMonths || {}).filter(Boolean).length;
+        const remainingMonths = Math.max(0, b.totalMonths - monthsPaidCount);
+        remainingDebtTotal += (remainingMonths * b.monthlyAmount);
+      });
+      document.getElementById('totalRemainingDebt').innerText = `₱${remainingDebtTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      // Clear & Draw Items
+      billsList.innerHTML = '';
+
+      if (activeBills.length === 0) {
+        billsList.innerHTML = `
+          <div class="p-10 text-center text-slate-400">
+            <i class="fa-solid fa-receipt text-4xl mb-3 opacity-50"></i>
+            <p class="text-sm">Walang bayarin o bill para sa buwan na ito.</p>
+          </div>
+        `;
+        return;
+      }
+
+      activeBills.forEach(bill => {
+        const isPaid = bill.paidMonths && bill.paidMonths[selectedMonth];
+        const monthDiff = getMonthDifference(bill.startMonthYear, selectedMonth);
+        const currentMonthNum = monthDiff + 1;
+
+        const row = document.createElement('div');
+        row.className = `p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/80 transition ${isPaid ? 'bg-emerald-50/30' : ''}`;
+
+        row.innerHTML = `
+          <div class="flex items-start gap-3.5">
+            <!-- Icon Badge -->
+            <div class="p-3 rounded-xl ${bill.type === 'loan' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'} shrink-0 mt-0.5">
+              <i class="fa-solid ${bill.type === 'loan' ? 'fa-hand-holding-dollar' : 'fa-bolt'} text-lg"></i>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-bold text-slate-800 text-base ${isPaid ? 'line-through text-slate-400' : ''}">${bill.name}</h4>
+                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md ${bill.type === 'loan' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}">
+                  ${bill.type === 'loan' ? `Hulugan (${currentMonthNum}/${bill.totalMonths} buwan)` : 'Regular Bill'}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                <span><i class="fa-regular fa-calendar mr-1"></i>Due Date: <strong>Araw ${bill.dueDate}</strong></span>
+                ${bill.notes ? `<span><i class="fa-regular fa-sticky-note mr-1"></i>${bill.notes}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <!-- Price & Action Controls -->
+          <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100">
+            <div class="text-left sm:text-right">
+              <div class="font-extrabold text-slate-800 text-lg">₱${bill.monthlyAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              ${bill.type === 'loan' ? `<div class="text-[11px] text-slate-400">Total: ₱${bill.totalDebt.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>` : ''}
+            </div>
+
+            <div class="flex items-center gap-2">
+              <!-- Paid Status Toggle Button -->
+              <button onclick="togglePaidStatus('${bill.id}', '${selectedMonth}')" class="px-3 py-1.5 rounded-xl font-medium text-xs flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-500 text-white shadow-sm hover:bg-emerald-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'} text-sm"></i>
+                <span>${isPaid ? 'Baitad Na' : 'Mark Paid'}</span>
+              </button>
+
+              <!-- Edit Button -->
+              <button onclick="openModal('${bill.id}')" class="p-2 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition" title="I-edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+
+              <!-- Delete Button -->
+              <button onclick="deleteBill('${bill.id}')" class="p-2 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 transition" title="Burahin">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        billsList.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
