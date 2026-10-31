@@ -43,6 +43,12 @@
       </div>
     </header>
 
+    <!-- Due Notification Alert Banner -->
+    <div id="dueAlertBanner" class="hidden bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex items-center gap-3">
+      <i class="fa-solid fa-bell text-amber-400 text-lg"></i>
+      <div class="text-xs text-amber-200" id="dueAlertText"></div>
+    </div>
+
     <!-- Add Button Banner -->
     <button onclick="openModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] text-slate-950 font-bold py-3.5 px-5 rounded-2xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2 text-sm">
       <i class="fa-solid fa-plus text-base"></i>
@@ -129,7 +135,7 @@
 
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Araw ng Due Date (Petsa)</label>
-          <input type="number" id="dueDate" min="1" max="31" value="25" placeholder="Hal. 25" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
+          <input type="number" id="dueDate" min="1" max="31" value="15" placeholder="Hal. 15" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:border-indigo-500 transition">
         </div>
 
         <!-- Utility Fields -->
@@ -189,6 +195,24 @@
     </div>
   </div>
 
+  <!-- Timeline Details Modal -->
+  <div id="detailsModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/40">
+        <div>
+          <h3 class="font-bold text-white text-sm" id="detailsTitle">Loan Details</h3>
+          <p class="text-[11px] text-slate-400" id="detailsSub">Monthly Installment Details</p>
+        </div>
+        <button type="button" onclick="closeDetailsModal()" class="text-slate-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4" id="timelineContainer"></div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = 'tagapamahala_bayarin_data';
     let currentFilter = 'all';
@@ -245,7 +269,7 @@
       document.getElementById('billForm').reset();
       document.getElementById('editId').value = '';
       document.getElementById('startMonth').value = document.getElementById('selectedMonth').value || currentMonthStr;
-      document.getElementById('dueDate').value = 25;
+      document.getElementById('dueDate').value = 15;
       
       if (editId) {
         const item = billsData.find(b => b.id === editId);
@@ -253,7 +277,7 @@
           document.getElementById('editId').value = item.id;
           document.getElementById('billName').value = item.name;
           document.getElementById('billType').value = item.type;
-          document.getElementById('dueDate').value = item.dueDate || 25;
+          document.getElementById('dueDate').value = item.dueDate || 15;
           
           if (item.type === 'utility') {
             document.getElementById('utilityAmount').value = item.amount ? item.amount.toLocaleString('en-US') : '';
@@ -337,7 +361,7 @@
       const id = document.getElementById('editId').value || 'bill_' + Date.now();
       const name = document.getElementById('billName').value;
       const type = document.getElementById('billType').value;
-      const dueDate = parseInt(document.getElementById('dueDate').value) || 25;
+      const dueDate = parseInt(document.getElementById('dueDate').value) || 15;
 
       let billObj = { id, name, type, dueDate, paidStatus: {} };
 
@@ -419,6 +443,75 @@
       return (tY - sY) * 12 + (tM - sM);
     }
 
+    function getMonthNameTagalog(monthKey) {
+      const [y, m] = monthKey.split('-');
+      const date = new Date(y, parseInt(m) - 1, 1);
+      return date.toLocaleDateString('tl-PH', { month: 'long', year: 'numeric' });
+    }
+
+    // Timeline Modal Opener
+    function openLoanTimeline(id) {
+      const item = billsData.find(b => b.id === id);
+      if (!item) return;
+
+      document.getElementById('detailsTitle').innerText = item.name;
+      document.getElementById('detailsSub').innerText = item.type === 'loan' ? `Loan Timeline (${item.months} Buwan)` : 'Utility History';
+
+      const container = document.getElementById('timelineContainer');
+      container.innerHTML = '';
+
+      const [startYear, startMonthNum] = (item.startMonth || currentMonthStr).split('-').map(Number);
+
+      const totalSteps = item.type === 'loan' ? item.months : 12;
+
+      for (let i = 0; i < totalSteps; i++) {
+        let calcDate = new Date(startYear, startMonthNum - 1 + i, item.dueDate || 15);
+        let mKey = calcDate.toISOString().substring(0, 7);
+        let dateDisplay = calcDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        let isPaid = item.paidStatus && item.paidStatus[mKey];
+        let amountVal = (item.customMonthly && item.customMonthly[mKey] !== undefined)
+          ? item.customMonthly[mKey]
+          : (item.type === 'loan' ? item.monthly : item.amount);
+
+        const stepDiv = document.createElement('div');
+        stepDiv.className = 'flex items-start gap-4 relative';
+
+        let statusBadge = isPaid 
+          ? '<span class="text-xs font-bold text-emerald-400">Paid</span>'
+          : '<span class="text-xs font-bold text-amber-500">Unpaid</span>';
+
+        let dotColor = isPaid ? 'bg-emerald-500 border-emerald-400' : 'bg-slate-700 border-slate-600';
+
+        stepDiv.innerHTML = `
+          <div class="flex flex-col items-center">
+            <div class="w-3.5 h-3.5 rounded-full border-2 ${dotColor} z-10 mt-1"></div>
+            ${i < totalSteps - 1 ? '<div class="w-0.5 bg-slate-800 flex-1 my-1"></div>' : ''}
+          </div>
+          <div class="flex-1 pb-4 flex items-center justify-between border-b border-slate-800/60">
+            <div>
+              <p class="text-xs font-bold text-slate-300">${item.type === 'loan' ? `${i+1}/${item.months}` : `Buwan ${i+1}`}</p>
+              <p class="text-xs text-slate-400">${dateDisplay}</p>
+            </div>
+            <div class="text-right">
+              ${statusBadge}
+              <p class="text-xs font-black text-white mt-0.5">${formatMoney(amountVal)}</p>
+            </div>
+          </div>
+        `;
+        container.appendChild(stepDiv);
+      }
+
+      document.getElementById('detailsModal').classList.remove('hidden');
+      document.getElementById('detailsModal').classList.add('flex');
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('detailsModal').classList.add('hidden');
+      document.getElementById('detailsModal').classList.remove('flex');
+    }
+
+    // Core App Renderer
     function renderApp() {
       const selectedMonth = document.getElementById('selectedMonth').value || currentMonthStr;
       const container = document.getElementById('billContainer');
@@ -429,8 +522,8 @@
       let countPaid = 0;
       let countUnpaid = 0;
       let overallTotalLoanDebt = 0;
+      let dueSoonCount = 0;
 
-      // Calculate total remaining debt across all loans
       billsData.forEach(item => {
         if (item.type === 'loan') {
           let paidSoFar = 0;
@@ -447,7 +540,6 @@
         }
       });
 
-      // Filter active items for the selected month and tab filter
       const activeItems = billsData.filter(item => {
         if (currentFilter !== 'all' && item.type !== currentFilter) return false;
         if (item.type === 'utility') return true;
@@ -483,12 +575,13 @@
           countPaid++;
         } else {
           countUnpaid++;
+          dueSoonCount++;
         }
 
         const card = document.createElement('div');
         card.className = `bg-slate-900 border ${isPaid ? 'border-emerald-500/40 bg-emerald-500/[0.03]' : 'border-slate-800'} p-4 rounded-2xl shadow-sm space-y-3`;
 
-        let loanInfoHTML = '';
+        let monthTaglineHTML = '';
         if (item.type === 'loan') {
           const offset = getMonthOffset(item.startMonth, selectedMonth) + 1;
           
@@ -503,14 +596,19 @@
           }
           const remainingDebt = Math.max(0, item.totalDebt - paidSoFar);
 
-          loanInfoHTML = `
+          monthTaglineHTML = `
             <div class="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400">
-              <span><i class="fa-solid fa-hourglass-half mr-1 text-indigo-400"></i> Buwan <b>${offset}</b> / ${item.months}</span>
-              <span><i class="fa-solid fa-coins mr-1 text-amber-400"></i> Balita: <b>${formatMoney(remainingDebt)}</b></span>
+              <span class="text-indigo-400 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i> Buwan <b>${offset}</b> ng ${item.months}</span>
+              <span><i class="fa-solid fa-coins mr-1 text-amber-400"></i> Natitirang Utang: <b>${formatMoney(remainingDebt)}</b></span>
             </div>
           `;
         } else {
-          loanInfoHTML = `<div class="text-[11px] text-indigo-400 font-medium"><i class="fa-solid fa-rotate mr-1"></i> Recurring Utility Bill</div>`;
+          const currentMonthName = getMonthNameTagalog(selectedMonth);
+          monthTaglineHTML = `
+            <div class="text-[11px] text-indigo-400 font-medium">
+              <i class="fa-solid fa-calendar-check mr-1"></i> Hulog para sa: <b>${currentMonthName}</b>
+            </div>
+          `;
         }
 
         card.innerHTML = `
@@ -522,8 +620,8 @@
                   ${item.type === 'loan' ? 'Loan' : 'Utility'}
                 </span>
               </div>
-              <p class="text-[11px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i> Due Date: Araw ng <b>${item.dueDate || 25}</b></p>
-              ${loanInfoHTML}
+              <p class="text-[11px] text-slate-400 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i> Due Date: Araw ng <b>${item.dueDate || 15}</b></p>
+              ${monthTaglineHTML}
             </div>
 
             <div class="text-right">
@@ -538,12 +636,17 @@
           </div>
 
           <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
-            <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
-                    class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}" style="margin-left: auto;">
-              <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
-              ${isPaid ? 'Nabayaran Na' : 'Markahan bilang Nabayaran'}
+            <button onclick="openLoanTimeline('${item.id}')" class="text-xs text-indigo-400 font-bold hover:underline flex items-center gap-1">
+              <i class="fa-solid fa-list-check"></i> Tignan ang Timeline
             </button>
-            <div class="flex items-center gap-1 pl-2">
+
+            <div class="flex items-center gap-2">
+              <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
+                      class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}">
+                <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
+                ${isPaid ? 'Nabayaran Na' : 'Markahan bilang Nabayaran'}
+              </button>
+              
               <button onclick="openModal('${item.id}')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center text-xs transition" title="Edit">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -556,7 +659,15 @@
         container.appendChild(card);
       });
 
-      // Update Summary Cards
+      // Update Due Alert Banner
+      const alertBanner = document.getElementById('dueAlertBanner');
+      if (dueSoonCount > 0) {
+        alertBanner.classList.remove('hidden');
+        document.getElementById('dueAlertText').innerHTML = `May <b>${dueSoonCount}</b> ka pang hindi nababayarang bill o loan ngayong buwan.`;
+      } else {
+        alertBanner.classList.add('hidden');
+      }
+
       document.getElementById('sumMonthly').innerText = formatMoney(totalMonthlyCommitment);
       document.getElementById('sumPaidSub').innerText = `${formatMoney(totalPaidThisMonth)} naibayad na`;
       document.getElementById('sumTotalDebt').innerText = formatMoney(overallTotalLoanDebt);
