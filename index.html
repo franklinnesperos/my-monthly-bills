@@ -17,18 +17,18 @@
   <!-- Header -->
   <header class="flex flex-col md:flex-row md:items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-gray-200 mb-6 gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid font-sharp fa-wallet text-indigo-600 mr-2"></i>Bills & Debt Ledger</h1>
-      <p class="text-xs text-gray-500 mt-1">Sundan at i-manage ang buwanang bayarin at kabuoang utang.</p>
+      <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-wallet text-indigo-600 mr-2"></i>Bills & Debt Ledger</h1>
+      <p class="text-xs text-gray-500 mt-1">Ligtas ang data sa browser kahit i-update ang script o i-refresh.</p>
     </div>
     <div class="flex items-center gap-2">
       <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition">
         <i class="fa-solid fa-plus"></i> Mag-add ng Bill / Loan
       </button>
-      <button onclick="exportData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Backup Data">
-        <i class="fa-solid fa-download"></i>
+      <button onclick="exportData()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Mag-Download ng Data Backup">
+        <i class="fa-solid fa-download"></i> Backup
       </button>
-      <button onclick="document.getElementById('importFile').click()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Restore Data">
-        <i class="fa-solid fa-upload"></i>
+      <button onclick="document.getElementById('importFile').click()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold p-2.5 rounded-xl transition" title="Mag-Restore ng Data">
+        <i class="fa-solid fa-upload"></i> Restore
       </button>
       <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
     </div>
@@ -40,7 +40,6 @@
     <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
       <div>
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Monthly Commitment</p>
-
         <h2 class="text-2xl font-black text-gray-800 mt-1" id="sumMonthly">₱0.00</h2>
         <p class="text-xs text-gray-400 mt-1">Lahat ng buwanang bayarin ngayong buwan</p>
       </div>
@@ -54,7 +53,7 @@
       <div>
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Kabuoang Utang (All Loans)</p>
         <h2 class="text-2xl font-black text-rose-600 mt-1" id="sumTotalDebt">₱0.00</h2>
-        <p class="text-xs text-gray-400 mt-1">Natitirang kabuoang balance sa installment loans</p>
+        <p class="text-xs text-gray-400 mt-1">Natitirang balance sa lahat ng installment loans</p>
       </div>
       <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl">
         <i class="fa-solid fa-hand-holding-dollar"></i>
@@ -80,8 +79,8 @@
       <label class="text-sm font-bold text-gray-700">Tignan ang Buwan:</label>
       <input type="month" id="selectedMonth" onchange="renderApp()" class="border border-gray-300 rounded-xl px-3 py-1.5 text-sm font-semibold text-gray-700 focus:outline-none focus:border-indigo-500">
     </div>
-    <div class="text-xs text-gray-400">
-      <i class="fa-solid fa-circle-info mr-1"></i> Automatic na lumalabas ang utilities bawat buwan.
+    <div class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+      <i class="fa-solid fa-shield-halved"></i> Auto-saved sa browser storage
     </div>
   </div>
 
@@ -168,16 +167,27 @@
   </div>
 
   <script>
-    // Initial State & App Storage
-    let billsData = JSON.parse(localStorage.getItem('my_bills_app_data')) || [];
+    // PERMANENT STORAGE KEY (Huwag babaguhin ang pangalan na ito para manatili ang data sa browser)
+    const STORAGE_KEY = 'my_bills_app_data';
 
-    // Set Default Month Selector to Current Month (YYYY-MM)
+    // Safe Initialization (Pinipigilan ang pagka-corrupt o pagkabura kapag nag-update ng script)
+    let billsData = [];
+    try {
+      const rawData = localStorage.getItem(STORAGE_KEY);
+      billsData = rawData ? JSON.parse(rawData) : [];
+      if (!Array.isArray(billsData)) billsData = [];
+    } catch (err) {
+      console.error("Error loading data from localStorage", err);
+      billsData = [];
+    }
+
+    // Set Default Month Selector
     const today = new Date();
     const currentMonthStr = today.toISOString().substring(0, 7);
     document.getElementById('selectedMonth').value = currentMonthStr;
     document.getElementById('startMonth').value = currentMonthStr;
 
-    // --- Helper Functions for Formatting with Comma (Kuwit) ---
+    // Helper Functions for Formatting with Comma
     function parseAmount(val) {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -190,17 +200,13 @@
     }
 
     function formatCurrencyInput(input) {
-      let cursorPosition = input.selectionStart;
       let rawValue = input.value.replace(/[^0-9.]/g, '');
-      
-      // Allow only one decimal point
       const parts = rawValue.split('.');
       if (parts.length > 2) rawValue = parts[0] + '.' + parts.slice(1).join('');
 
       if (parts[0]) {
         parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
       }
-      
       input.value = parts.join('.');
     }
 
@@ -294,7 +300,7 @@
       }
     }
 
-    // Save Bill or Loan
+    // Save Bill or Loan safely
     function saveBill(e) {
       e.preventDefault();
       const id = document.getElementById('editId').value || 'bill_' + Date.now();
@@ -303,7 +309,6 @@
 
       let billObj = { id, name, type, paidStatus: {} };
 
-      // Preserve existing custom monthly values if editing
       const existing = billsData.find(b => b.id === id);
       if (existing) billObj.paidStatus = existing.paidStatus || {};
       if (existing && existing.customMonthly) billObj.customMonthly = existing.customMonthly;
@@ -327,7 +332,7 @@
           billObj.totalDebt = billObj.monthly * months;
         } else if (calcType === 'custom') {
           billObj.totalDebt = parseAmount(document.getElementById('totalLoan').value);
-          billObj.monthly = billObj.totalDebt / months; // default baseline
+          billObj.monthly = billObj.totalDebt / months;
         }
       }
 
@@ -367,13 +372,16 @@
       }
     }
 
-    // Save Data to LocalStorage
+    // Save Data to Permanent LocalStorage
     function saveAndRender() {
-      localStorage.setItem('my_bills_app_data', JSON.stringify(billsData));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(billsData));
+      } catch (e) {
+        console.error("Hindi ma-save ang data:", e);
+      }
       renderApp();
     }
 
-    // Utility: Date Month Operations
     function getMonthOffset(startStr, targetStr) {
       const [sY, sM] = startStr.split('-').map(Number);
       const [tY, tM] = targetStr.split('-').map(Number);
@@ -408,156 +416,3 @@
         }
       });
 
-      // Filter bills active for the selected month
-      const activeItems = billsData.filter(item => {
-        if (item.type === 'utility') return true;
-        const offset = getMonthOffset(item.startMonth, selectedMonth);
-        return offset >= 0 && offset < item.months;
-      });
-
-      if (activeItems.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white p-8 rounded-2xl text-center border border-gray-200">
-            <i class="fa-solid fa-folder-open text-gray-300 text-4xl mb-3"></i>
-            <p class="text-gray-500 font-medium text-sm">Walang naka-record na bill o utang sa buwan na ito.</p>
-            <button onclick="openModal()" class="mt-3 text-xs text-indigo-600 font-bold hover:underline">+ Mag-add ng Bill</button>
-          </div>
-        `;
-      }
-
-      activeItems.forEach(item => {
-        const isPaid = item.paidStatus && item.paidStatus[selectedMonth];
-        
-        let dueAmount = 0;
-        if (item.type === 'utility') {
-          dueAmount = item.amount || 0;
-        } else {
-          dueAmount = (item.customMonthly && item.customMonthly[selectedMonth] !== undefined)
-            ? item.customMonthly[selectedMonth]
-            : item.monthly;
-        }
-
-        totalMonthlyCommitment += dueAmount;
-        if (isPaid) {
-          totalPaidThisMonth += dueAmount;
-        } else {
-          totalUnpaidThisMonth += dueAmount;
-        }
-
-        // Card UI Element
-        const card = document.createElement('div');
-        card.className = `bg-white p-5 rounded-2xl border ${isPaid ? 'border-emerald-200 bg-emerald-50/20' : 'border-gray-200'} shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition`;
-
-        let loanInfoHTML = '';
-        if (item.type === 'loan') {
-          const offset = getMonthOffset(item.startMonth, selectedMonth) + 1;
-          
-          let paidSoFar = 0;
-          for (let m in item.paidStatus) {
-            if (item.paidStatus[m]) {
-              const currentVal = (item.customMonthly && item.customMonthly[m] !== undefined)
-                ? item.customMonthly[m]
-                : item.monthly;
-              paidSoFar += currentVal;
-            }
-          }
-          const remainingDebt = Math.max(0, item.totalDebt - paidSoFar);
-
-          loanInfoHTML = `
-            <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
-              <span><i class="fa-solid fa-hourglass-half mr-1 text-indigo-500"></i> Buwan: <b>${offset}</b> / ${item.months}</span>
-              <span><i class="fa-solid fa-coins mr-1 text-amber-500"></i> Natitirang Utang: <b>${formatMoney(remainingDebt)}</b></span>
-              <span><i class="fa-solid fa-receipt mr-1 text-gray-400"></i> Kabuoan: ${formatMoney(item.totalDebt)}</span>
-            </div>
-          `;
-        } else {
-          loanInfoHTML = `<div class="text-xs text-indigo-600 font-medium mt-1"><i class="fa-solid fa-rotate mr-1"></i> Recurring Monthly Bill</div>`;
-        }
-
-        card.innerHTML = `
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <h3 class="text-base font-bold text-gray-800">${item.name}</h3>
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${item.type === 'loan' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}">
-                ${item.type === 'loan' ? 'Loan / Installment' : 'Utility'}
-              </span>
-            </div>
-            ${loanInfoHTML}
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between md:justify-end gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-gray-100">
-            <!-- Amount Section -->
-            <div class="text-right">
-              <div class="flex items-center gap-1">
-                <span class="text-xs text-gray-400">Bayad:</span>
-                <input type="text" 
-                       value="${dueAmount ? dueAmount.toLocaleString('en-US') : ''}" 
-                       onchange="updateCustomMonthly('${item.id}', '${selectedMonth}', this.value)"
-                       oninput="formatCurrencyInput(this)"
-                       class="w-28 text-right font-black text-gray-800 border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-indigo-500" 
-                       placeholder="0.00">
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2">
-              <button onclick="togglePaid('${item.id}', '${selectedMonth}')" 
-                      class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${isPaid ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}">
-                <i class="fa-solid ${isPaid ? 'fa-circle-check' : 'fa-circle'}"></i>
-                ${isPaid ? 'Bayad Na' : 'Hindi Pa'}
-              </button>
-              
-              <button onclick="openModal('${item.id}')" class="text-gray-400 hover:text-indigo-600 p-1.5 text-sm transition" title="Edit">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button onclick="deleteBill('${item.id}')" class="text-gray-400 hover:text-rose-600 p-1.5 text-sm transition" title="Delete">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-
-      // Update Summary Cards UI
-      document.getElementById('sumMonthly').innerText = formatMoney(totalMonthlyCommitment);
-      document.getElementById('sumTotalDebt').innerText = formatMoney(overallTotalLoanDebt);
-      document.getElementById('sumPaid').innerText = formatMoney(totalPaidThisMonth);
-      document.getElementById('sumUnpaid').innerText = `Natitira: ${formatMoney(totalUnpaidThisMonth)}`;
-    }
-
-    // Data Export / Import JSON Backup
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(billsData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `bills_backup_${new Date().toISOString().substring(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importData(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const imported = JSON.parse(evt.target.result);
-          if (Array.isArray(imported)) {
-            billsData = imported;
-            saveAndRender();
-            alert('Matagumpay na na-restore ang iyong mga bills data!');
-          }
-        } catch(err) {
-          alert('Invalid JSON file.');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // Run Initial Render
-    renderApp();
-  </script>
-</body>
-</html>
